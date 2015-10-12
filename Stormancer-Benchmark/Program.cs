@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Stormancer.Plugins;
 using System.Reactive.Linq;
 using System.IO;
+using System.Threading;
 
 namespace Stormancer_Benchmark
 {
@@ -17,7 +18,7 @@ namespace Stormancer_Benchmark
         private const string APPLICATIONNAME = "tester";
         private const string SCENENAME = "main";
 
-        private static int _maxPendingRpcPings = 1;
+        private static int _maxPendingRpcPings = 10;
 
         static void Main(string[] args)
         {
@@ -49,7 +50,7 @@ namespace Stormancer_Benchmark
             {
                 if (pendingRpcPing < _maxPendingRpcPings)
                 {
-                    _maxPendingRpcPings++;
+                    Interlocked.Increment(ref pendingRpcPing);
 
                     var measure = new Measure();
 
@@ -57,11 +58,13 @@ namespace Stormancer_Benchmark
                     measure.ServerReceptionTime = await scene.RpcTask<object, long>("rpcping", null);
                     measure.ReceptionTime = client.Clock;
 
+                    Interlocked.Decrement(ref pendingRpcPing);
+
                     measures.Add(measure);
                 }
             }))
             {
-                await Task.Delay(60000);
+                await Task.Delay(600000);
             }
 
 
